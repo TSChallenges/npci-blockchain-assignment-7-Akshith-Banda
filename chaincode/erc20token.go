@@ -24,6 +24,7 @@ type Balance struct {
 
 
 // TODO: InitLedger for token initialization
+func (tc *TokenContract) InitLedger(ctx co)
 
 
 // TODO: MintTokens for minting tokens
