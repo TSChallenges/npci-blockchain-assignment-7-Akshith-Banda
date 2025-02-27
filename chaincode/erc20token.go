@@ -30,35 +30,44 @@ type Balance struct {
 // TODO: InitLedger for token initialization
 func (tc *TokenContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 
-	isadmin, clientId, err := isAdmin(ctx)
+	clientId, err := ctx.GetClientIdentity().GetID()
 	if err != nil {
 		return err
 	}
 
-	if !isadmin {
-		return errors.New("client not admin. Only admins can init ledger")
-	}
+	fmt.Println("-------------------------------CLIENTID---------------------------------------")
+	fmt.Println(clientId)
+	fmt.Println("------------------------------------------------------------------------------")
 
-	token := &Token{
-		Name:        "BNB-Token",
-		Symbol:      "BNB",
-		Decimals:    18,
-		TotalSupply: 10000,
-	}
+	// isadmin, clientId, err := isAdmin(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = setToken(ctx, token)
-	if err != nil {
-		return err
-	}
+	// if !isadmin {
+	// 	return errors.New("client not admin. Only admins can init ledger")
+	// }
 
-	balance := &Balance{
-		Balance: token.TotalSupply,
-	}
+	// token := &Token{
+	// 	Name:        "BNB-Token",
+	// 	Symbol:      "BNB",
+	// 	Decimals:    18,
+	// 	TotalSupply: 10000,
+	// }
 
-	err = setBalance(ctx, balance, clientId)
-	if err != nil {
-		return err
-	}
+	// err = setToken(ctx, token)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// balance := &Balance{
+	// 	Balance: token.TotalSupply,
+	// }
+
+	// err = setBalance(ctx, balance, clientId)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -349,7 +358,7 @@ func isAdmin(ctx contractapi.TransactionContextInterface) (bool, string, error) 
 
 	clientId, err := ctx.GetClientIdentity().GetID()
 	if err != nil {
-		return true, "", errors.New(fmt.Sprintf("error getting client id : %+v\n", err))
+		return true, "", fmt.Errorf("error getting client id : %+v", err)
 	}
 
 	return true, clientId, nil
