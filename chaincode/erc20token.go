@@ -30,44 +30,44 @@ type Balance struct {
 // TODO: InitLedger for token initialization
 func (tc *TokenContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 
-	clientId, err := ctx.GetClientIdentity().GetID()
+	token, err := getToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("-------------------------------CLIENTID---------------------------------------")
-	fmt.Println(clientId)
-	fmt.Println("------------------------------------------------------------------------------")
+	if token != nil {
+		return errors.New("ledger already init")
+	}
 
-	// isadmin, clientId, err := isAdmin(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	isadmin, clientId, err := isAdmin(ctx)
+	if err != nil {
+		return err
+	}
 
-	// if !isadmin {
-	// 	return errors.New("client not admin. Only admins can init ledger")
-	// }
+	if !isadmin {
+		return errors.New("client not admin. Only admins can init ledger")
+	}
 
-	// token := &Token{
-	// 	Name:        "BNB-Token",
-	// 	Symbol:      "BNB",
-	// 	Decimals:    18,
-	// 	TotalSupply: 10000,
-	// }
+	token = &Token{
+		Name:        "BNB-Token",
+		Symbol:      "BNB",
+		Decimals:    18,
+		TotalSupply: 10000,
+	}
 
-	// err = setToken(ctx, token)
-	// if err != nil {
-	// 	return err
-	// }
+	err = setToken(ctx, token)
+	if err != nil {
+		return err
+	}
 
-	// balance := &Balance{
-	// 	Balance: token.TotalSupply,
-	// }
+	balance := &Balance{
+		Balance: token.TotalSupply,
+	}
 
-	// err = setBalance(ctx, balance, clientId)
-	// if err != nil {
-	// 	return err
-	// }
+	err = setBalance(ctx, balance, clientId)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -86,6 +86,10 @@ func (tc *TokenContract) MintTokens(ctx contractapi.TransactionContextInterface,
 	token, err := getToken(ctx)
 	if err != nil {
 		return err
+	}
+
+	if token == nil {
+		return errors.New("token not init")
 	}
 
 	if token.TotalSupply+tokensToMint > MaxTokensInCirculation {
@@ -161,6 +165,12 @@ func (tc *TokenContract) ApproveSpender(ctx contractapi.TransactionContextInterf
 
 	if balance.Balance < tokens {
 		return errors.New("not enough tokens")
+	}
+
+	balance.Balance -= tokens
+	err = setBalance(ctx, balance, owner)
+	if err != nil {
+		return err
 	}
 
 	clientId, err := ctx.GetClientIdentity().GetID()
@@ -292,6 +302,10 @@ func getToken(ctx contractapi.TransactionContextInterface) (*Token, error) {
 		return nil, err
 	}
 
+	if tokenBytes == nil {
+		return nil, nil
+	}
+
 	token := &Token{}
 	err = json.Unmarshal(tokenBytes, &token)
 	if err != nil {
@@ -323,7 +337,9 @@ func getBalance(ctx contractapi.TransactionContextInterface, clientId string) (*
 	}
 
 	if balanceBytes == nil {
-		return nil, nil
+		return &Balance{
+			Balance: 0,
+		}, nil
 	}
 
 	balance := &Balance{}

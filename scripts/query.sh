@@ -14,5 +14,5 @@ export CORE_PEER_MSPCONFIGPATH=/workspaces/npci-blockchain-assignment-7-Akshith-
 
 export CORE_PEER_ADDRESS=localhost:7051
 
-# Query balances
-peer chaincode query -C mychannel -n basic -c '{"Args":["GetAllAssets", ""]}'
+# Query balances - admin
+peer chaincode query -C erc20 -n erc20cc -c '{"Args":["GetBalance", "eDUwOTo6Q049QWRtaW5Ab3JnMS5leGFtcGxlLmNvbSxPVT1hZG1pbixMPVNhbiBGcmFuY2lzY28sU1Q9Q2FsaWZvcm5pYSxDPVVTOjpDTj1jYS5vcmcxLmV4YW1wbGUuY29tLE89b3JnMS5leGFtcGxlLmNvbSxMPVNhbiBGcmFuY2lzY28sU1Q9Q2FsaWZvcm5pYSxDPVVT"]}'
