@@ -143,12 +143,92 @@ func (tc *TokenContract) GetBalance(ctx contractapi.TransactionContextInterface,
 }
 
 // TODO: ApproveSpender for approving spending
-func (tc *TokenContract) ApproveSpender(ctx contractapi.TransactionContextInterface) {
+func (tc *TokenContract) ApproveSpender(ctx contractapi.TransactionContextInterface, owner string, tokens int) error {
 
+	balance, err := getBalance(ctx, owner)
+	if err != nil {
+		return err
+	}
+
+	if balance.Balance < tokens {
+		return errors.New("not enough tokens")
+	}
+
+	clientId, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		return err
+	}
+
+	compositeKey, err := ctx.GetStub().CreateCompositeKey("ApproveSpender", []string{owner, clientId})
+	if err != nil {
+		return err
+	}
+
+	approvSpendBalance, err := getBalance(ctx, compositeKey)
+	if err != nil {
+		return err
+	}
+
+	if approvSpendBalance == nil {
+		approvSpendBalance = &Balance{
+			Balance: tokens,
+		}
+	} else {
+		approvSpendBalance.Balance += tokens
+	}
+
+	approveSpendBalanceBytes, err := json.Marshal(approvSpendBalance)
+	if err != nil {
+		return err
+	}
+
+	err = ctx.GetStub().PutState(compositeKey, approveSpendBalanceBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // TODO: TransferFrom for transferring from approved spenders
-func (tc *TokenContract) TransferFrom(ctx contractapi.TransactionContextInterface) {
+func (tc *TokenContract) TransferFrom(ctx contractapi.TransactionContextInterface, owner, sendTo string, tokens int) error {
+	clientId, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		return err
+	}
+
+	compositeKey, err := ctx.GetStub().CreateCompositeKey("ApproveSpender", []string{owner, clientId})
+	if err != nil {
+		return err
+	}
+
+	balance, err := getBalance(ctx, compositeKey)
+	if err != nil {
+		return err
+	}
+
+	if balance.Balance < tokens {
+		return errors.New("not enough balance to transfer")
+	}
+
+	balance.Balance -= tokens
+
+	err = setBalance(ctx, balance, compositeKey)
+	if err != nil {
+		return err
+	}
+
+	recvBalance, err := getBalance(ctx, sendTo)
+	if err != nil {
+		return err
+	}
+
+	recvBalance.Balance += tokens
+
+	err = setBalance(ctx, recvBalance, sendTo)
+	if err != nil {
+		return err
+	}
+	return nil
 
 }
 
@@ -231,6 +311,10 @@ func getBalance(ctx contractapi.TransactionContextInterface, clientId string) (*
 	balanceBytes, err := ctx.GetStub().GetState(clientId)
 	if err != nil {
 		return nil, err
+	}
+
+	if balanceBytes == nil {
+		return nil, nil
 	}
 
 	balance := &Balance{}
